@@ -1,0 +1,19 @@
+Setup:  
+Initial stage will see the user place the game obstacles on the field. U for user spaceship, R for robot
+A for asteroid and M for intially inactive mine.
+
+Rules : 
+User can move onto inactive mines in order to activate them. The mine explodes if a robot comes too close, destroying any nearby robots and asteroids.
+It is the robots job to remove any inactive mines from the playing field.
+If the robot is next to inactive mine the robot must move to the mine, thereby removing it.
+Otherwise, if the user is a square away from the robot, the robot must move onto the user thereby ending the game with the user's loss.
+The robot wins if the user is destoryed and there are still robots on the field.
+The user wins if the robots are destroyed by active mines.
+The game is a draw if the user is alive and the mines are removed from play.
+User uses aswd to move.
+User or robot may not move to asteroid space.
+
+
+Known flaws:
+Robot occasionally disappears from play.
+Currently only works on chrome, as the input method only works on chrome browser.

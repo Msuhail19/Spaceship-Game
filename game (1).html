@@ -1,0 +1,474 @@
+<!Doctype html>
+<html>
+<head>
+	<title>Board Game</title>
+	<style>
+      td { border: 1px solid black;
+           width: 3em;
+           height: 3em;
+           text-align: center;
+           vertical-align: middle;
+      }
+   </style>
+</head>
+<body>
+
+<div style="float: left;">
+	<table id ="table">
+		<tbody>
+		</tbody>
+	</table>
+</div>
+
+<div> 
+	<button id ="button" onclick="endSetup()">Play</button>
+	<p id="round"></p>
+	<p id="robots"></p>
+	<p id="mines"></p>
+
+</div>
+
+
+
+
+	<script>
+		//Initialise Variables
+		var stage = 1;
+		var start = "Insert A for asteroid, M for Mine U for User and R for enemy";
+		var board = [];
+		var startplay = true;
+		var compNo = 0;
+		var userno =0;
+		var mineNo=0;
+		var round =0;
+		var xcoord;
+		var xcoord;
+		var ycoord;
+		var activeM = [];
+		var enemyPOS = [];
+		
+		displayRound();
+		//Create Board.
+		for (var i = 0; i < 10; i++){
+			var array = [];
+			var array2 = [];
+			var array3 = [];
+			for (var j = 0; j < 10; j++)
+			{
+				array.push('');
+				array2.push('');
+				array3.push('');
+			}
+			board.push(array);
+			activeM.push(array2);
+			enemyPOS.push(array2);
+		}
+		
+		
+		
+		
+		//Run getTable Function
+		getTable();
+		
+		//generate table
+		function getTable(){
+			var table = document.getElementById('table');
+			var tr, td, row, cell;
+			for (row = 0; row < 10; row++) {
+				tr = document.createElement('tr');
+				for (cell = 0; cell < 10; cell++) {
+					td = document.createElement('td');
+					td.id = row*cell;
+					td.onclick = function(){	onclickDo(this);	};
+					tr.appendChild(td);
+				}
+			table.appendChild(tr);
+			}
+		}
+		
+		
+		
+		
+		function onclickDo(cell){
+			if(stage ==1){
+			//setup code here
+				//alert(cell.parentNode.rowIndex + ":"  +cell.cellIndex);
+				document.onkeydown = function(){
+					var name = event.keyCode;
+					if(!name){
+						mycase = event.which;
+					}
+					if(stage == 2) return;							//Prevent cell values changing after setup ends
+					if(name==65 ||name == 77||name==82){ 			//Add asteroid, Mine or Enemy(R)
+						cell.innerHTML = String.fromCharCode(name);
+					}
+					else if(name==85 && userno<1){					 //Add user
+						cell.innerHTML = String.fromCharCode(name);
+						userno++;
+						xcoord = cell.parentNode.rowIndex;
+						ycoord = cell.cellIndex;
+						return false;
+					}
+					else if(name==85 && userno>=1){					 //Not more than one user.
+						alert("Only one user per grid.");
+						return false;
+					}
+					else{
+						alert("Invalid Char.");
+						return;
+					}
+					
+				}
+				return;
+			}
+		}
+		
+		
+		//Action if end setup button is pressed.
+		function endSetup(){
+			if(userno == 1){
+				stage = 2;
+				
+			}
+			else{
+				alert("Error : No user placed on field.");
+				return;
+			}
+			var table = document.getElementById('table');
+			for(var i = 0;i<10;i++){
+				for(var k=0;k<10;k++){
+					
+					//Check for mines or robots
+					var content = table.rows[i].cells[k].innerHTML;
+					if(!content){
+						content = table.rows[i].cells[k].textContent;
+					}
+					
+					//Count types of items
+					if(content == 'M'){
+						mineNo++;
+					}else if(content == "R"){
+						compNo++;
+					}
+					
+					board[i][k] = content;
+				}
+			}
+			play();
+		}
+		
+		//Display board array to field.
+		function displayGrid(boot){
+			var table = document.getElementById('table');
+			for(var i = 0;i<10;i++){
+				for(var k=0;k<10;k++){
+					var temp = boot[i][k];
+					if(!temp){
+						table.rows[i].cells[k].innerHTML = " ";
+					}
+					else{
+						table.rows[i].cells[k].innerHTML = temp;
+					}
+				}
+			}
+		}
+		
+		//Game code.
+		function play(){
+			//Copy initial setup into board variable.
+			document.getElementById('button').innerHTML = "End Game";
+			document.getElementById('button').onclick = function(){end();}
+			
+			
+			userTurn();
+		}
+		
+		//End the game 
+		function end(){
+			startplay = false;
+			document.getElementById('button').innerHTML = "Game Ended !";
+			document.getElementById('button').onclick = "";
+		}
+		
+		//UserTakeTurn
+		function userTurn(){
+			
+			if(startplay==true){
+				userno = 1;
+				document.addEventListener("keyup", function(){
+					
+					checkWin();
+					var x = event.which || event.keyCode;
+					var oldx = xcoord;
+					var oldy = ycoord;	
+					
+					if(startplay == false) {
+						document.removeEventListener();
+					}
+					//Edit no of rounds 
+					round++;
+					
+					//Check for grid boundaries and charachter chosen.
+					if(x == 87){
+						if(xcoord!=0){
+							xcoord--;
+						}
+					}
+					else if(x == 65){
+						if(ycoord!=0){
+							ycoord--;
+						}
+					}
+					else if(x ==68 ){
+						if(ycoord!=9){
+							ycoord++ ;
+						}
+					}
+					else if(x== 83){
+						if(xcoord!=9){
+							xcoord++;
+						}
+					}
+					else{
+						alert("invalid key");
+						return;
+					}
+					
+					//check for asteroid
+					if(board[xcoord][ycoord] == 'A'){
+						alert("Invalid move. Turn used");
+						xcoord = oldx; ycoord=oldy;
+					}
+					
+					//If on inactive mine spot : activate
+						if(board[xcoord][ycoord]=='M' && activeM[xcoord][ycoord]!='M'){
+							activeM[xcoord][ycoord] = 'M';
+							board[xcoord][ycoord] = 'U';
+						}else if(board[xcoord][ycoord]=='M' && activeM[xcoord][ycoord]=='M'){
+							board[oldx][oldy] = '';
+						}
+					
+						//If mine been activated in previous turn
+						if(activeM[oldx][oldy]=='M'){
+							board[oldx][oldy] = 'M';
+						}
+						else{
+							board[oldx][oldy] = '';
+						}
+					
+					
+					board[xcoord][ycoord] = "U";
+					displayGrid(board);
+					moveEnemy();
+					checkWin();
+					
+					displayRound();
+				});
+			}
+			
+		}
+		
+		function checkWin(){
+			if(userno == 0 && compNo>0){
+				alert("Computer Victory");
+				end();
+			}else if(userno == 1 && compNo<1){
+						alert("User Victory! Congratulations");
+						end();
+			}else if(userno == 1 && compNo<1){
+						alert("User Victory! Congratulations");
+						end();
+			}
+			else if(mineNo == 0){
+						alert("Draw");
+			}
+		}
+		
+		
+		
+		function moveEnemy(){
+			var mineX;
+			var mineY;
+			var XPUSH=[];
+			var YPUSH=[];
+		
+			
+			for(var i=0;i<10;i++){
+				for(var j=0;j<10;j++){
+					if(board[i][j] == 'R'){
+						var user = false;
+						var activeMine =false;
+						var tomoveX;
+						var tomoveY;
+						//Check if mine nearby
+						//Check neighbours
+						for (var k = i-1;k<=i+1;k++){
+							for(var h = j-1;h<=j+1;h++){
+								if(	!(k<0) && !(h<0) && !(k>9) && !(h>9)){
+									if(board[k][h]=='M'){mineX = k; mineY = h;}
+									if(board[k][h]=='U'){user = true;}
+									if(activeM[k][h]=='M'){activeMine = true;}
+								}
+							}
+						}
+						
+						//Check if inactive mine found
+						if(mineX && activeM[mineX][mineY]!='M'){
+							mineNo--;
+							tomoveX = mineX;
+							tomoveY = mineY;
+							
+						}
+						else if(user !=false){ // User nearby during enemy turn
+							tomoveX = xcoord;
+							tomoveY = ycoord;
+							userno--;
+						}
+						else { // Move towards user
+							var x;
+							var y;
+							var x2;
+							var y2;
+							
+							if (xcoord==i){	
+									var x = i;
+									var x2 = i;
+							}
+							if (xcoord>i){
+									var x2= i+1;
+									var x= i+1;
+							}
+							if (xcoord<i){
+									var x = i-1;
+									var x2 = i-1;
+							}
+											
+							if (ycoord==j){	
+									var y = j;	
+									var y2 = j;	
+							}
+							if (ycoord<j){	
+									var y = j-1;
+									var y2 = j-1;
+							}
+							if (ycoord>j){							
+									var y2 = j+1;
+									var y = j+1;
+							}
+							
+							//CHECK IF chosen contains an asteroid
+							
+							if(x && y && board[x][y]!='A' && board[x][y]!='R'){
+								tomoveX = x;
+								tomoveY = y;
+								
+							}  
+							else if(y && board[i][y]!='A' && board[i][y]!='R'){
+								tomoveX = i;
+								tomoveY = y;
+							}
+							else if(x && board[x][j]!='A' && board[x][j]!='R'){
+								tomoveX = x;
+								tomoveY = j;
+							}
+							else{
+								for (var k = i-1;k<=i+1;k++){
+									for(var h = j-1;h<=j+1;h++){
+										if(	!(k<0) && !(h<0) && !(k>9) && !(h>9)){
+											if(board[k][h]!='R' && board[k][h]!='A' ){
+												tomoveX = k; tomoveY = h;
+											}
+										}
+									}
+								}
+								
+								if(!tomoveX || !tomoveY){
+									tomoveX = i;
+									tomoveY = j;
+									document.write("ERROR");
+								}
+							
+							}
+						}
+						
+						
+						for (var k = tomoveX-1;k<=tomoveX+1;k++){
+							for(var h = tomoveY-1;h<=tomoveY+1;h++){
+								if(	!(k<0) && !(h<0) && !(k>9) && !(h>9)){
+									if(activeM[k][h]=='M'){
+										activeMine = true;
+										mineX = k;
+										mineY = h;
+									}
+								}
+							}
+						}
+						
+						
+						board[i][j] = ' ';
+						if(activeMine){
+							//Killship
+							compNo--;
+							XPUSH.push('');
+							YPUSH.push('');
+							board[mineX][mineY] = '';
+							for (var k = mineX-1;k<=mineX+1;k++){
+								for(var h = mineY-1;h<=mineY+1;h++){
+									if(	!(k<0) && !(h<0) && !(k>9) && !(h>9)){
+										if(board[h][k]=='R' ||board[h][k]=='A'){
+											board[h][k] = ' ';
+										}
+									}
+								}
+							}
+							activeM[mineX][mineY] = '';
+						}
+						else{
+							XPUSH.push(tomoveX);
+							YPUSH.push(tomoveY);
+							
+						}
+					} 
+				}
+			}
+			
+			
+			for(var i=0;i<XPUSH.length;i++){
+				var temp = XPUSH[i];
+				var temp2 = YPUSH[i];
+				if(temp && temp2){board[temp][temp2] = 'R';}
+				
+			}
+			displayGrid(board);
+			
+		}
+		
+
+		
+		
+		//Display round information
+		function displayRound(){
+			document.getElementById('round').innerHTML = 'Number of Rounds : ' + round;
+			document.getElementById('mines').innerHTML = 'Number of robots : ' + compNo;
+			document.getElementById('robots').innerHTML = 'Number of mines : ' + mineNo;
+		}
+		
+		
+		
+	</script>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</body>
+
+</html>
